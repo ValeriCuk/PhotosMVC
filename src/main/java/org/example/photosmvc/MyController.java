@@ -79,6 +79,6 @@ public class MyController {
         if(photos.remove(id)==null)
             throw new PhotoNotFoundException();
         else
-            return "/index";
+            return "index";
     }
 }
