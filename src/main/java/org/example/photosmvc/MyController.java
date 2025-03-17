@@ -1,21 +1,24 @@
 package org.example.photosmvc;
 
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Controller
 @RequestMapping("/")
@@ -63,6 +66,32 @@ public class MyController {
         return "photos";
     }
 
+    @RequestMapping("/all_photos/downloadZip")
+    public ResponseEntity<InputStreamResource> downloadPhotosAsZip() throws IOException {
+        if (photos.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
+            for (Map.Entry<Long, byte[]> entry : photos.entrySet()) {
+                ZipEntry zipEntry = new ZipEntry(entry.getKey() + ".jpg");
+                zipOutputStream.putNextEntry(zipEntry);
+                zipOutputStream.write(entry.getValue());
+                zipOutputStream.closeEntry();
+            }
+        }
+
+        byte[] zipBytes = byteArrayOutputStream.toByteArray();
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(zipBytes);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=photos.zip")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(zipBytes.length)
+                .body(new InputStreamResource(inputStream));
+    }
+
     @RequestMapping("/photo/{photo_id}")
     public ResponseEntity<byte[]> onPhoto(@PathVariable("photo_id") long id) {
         byte[] bytes = photos.get(id);
@@ -72,6 +101,14 @@ public class MyController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         return new ResponseEntity<byte[]>(bytes,headers, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/deletePhotos", method = RequestMethod.POST)
+    public String deletePhotos(@RequestParam("photoIds") List<Long> photoIds) {
+        for (Long id : photoIds) {
+            photos.remove(id);
+        }
+        return "redirect:/all_photos";
     }
 
     @RequestMapping("/delete/{photo_id}")

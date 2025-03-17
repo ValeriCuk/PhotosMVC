@@ -14,12 +14,26 @@
 <h2>Photos</h2>
 
 <div class="image-container">
-  <c:forEach var="entry" items="${photos}">
-    <div class="image-item">
-      <img src="/photo/${entry.key}" alt="NoImg"/>
-      <div class="id">ID: ${entry.key}</div>
-    </div>
-  </c:forEach>
+  <form action="/deletePhotos" method="POST">
+    <c:forEach var="entry" items="${photos}">
+      <div class="image-item">
+        <img src="/photo/${entry.key}" style="width:200px;height:200px; object-fit:cover; border-radius:10px;" alt="NoImg"/>
+        <div class="id">ID: ${entry.key}</div>
+        <br>
+        Mark for deletion
+        <input type="checkbox" name="photoIds" value="${entry.key}" id="photo_${entry.key}">
+        <br>
+        <br>
+        <br>
+      </div>
+    </c:forEach>
+    <br>
+    <br>
+    <input type="submit" value="Delete">
+  </form>
+  <br>
+  <br>
+  <a href="/all_photos/downloadZip" class="download-button">Download All Photos as ZIP</a>
 </div>
 </body>
 </html>
